@@ -47,18 +47,24 @@ Provide:
 Keep the response concise and suitable for a merchant dashboard.
 """
 
-    response = client.chat.completions.create(
-        model=model,
-        messages=[
-            {
-                "role": "user",
-                "content": prompt
-            }
-        ],
-        max_tokens=300
-    )
+    try:
+        response = client.chat.completions.create(
+            model=model,
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ],
+            max_tokens=300
+        )
 
-    return {
-        "status": "success",
-        "explanation": response.choices[0].message.content
-    }
+        return {
+            "status": "success",
+            "explanation": response.choices[0].message.content
+        }
+    except Exception as e:
+        return {
+            "status": "unavailable",
+            "message": f"Featherless investigation unavailable: {str(e)}"
+        }

@@ -143,15 +143,15 @@ def get_metrics():
     ).fetchone()[0]
 
     high_risk = connection.execute(
-        "SELECT COUNT(*) FROM transactions WHERE risk_level = 'high'"
+        "SELECT COUNT(*) FROM transactions WHERE LOWER(risk_level) = 'high'"
     ).fetchone()[0]
 
     medium_risk = connection.execute(
-        "SELECT COUNT(*) FROM transactions WHERE risk_level = 'medium'"
+        "SELECT COUNT(*) FROM transactions WHERE LOWER(risk_level) = 'medium'"
     ).fetchone()[0]
 
     low_risk = connection.execute(
-        "SELECT COUNT(*) FROM transactions WHERE risk_level = 'low'"
+        "SELECT COUNT(*) FROM transactions WHERE LOWER(risk_level) = 'low'"
     ).fetchone()[0]
 
     connection.close()
