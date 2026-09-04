@@ -1,10 +1,18 @@
+from dotenv import load_dotenv
+
+load_dotenv()
 from fastapi import FastAPI
 from pydantic import BaseModel
 import uuid
-
+from backend.services.risk_factors import get_risk_factors
 from backend.decision_engine import make_decision
-from backend.database.database import save_transaction, get_transactions
-
+from backend.database.database import (
+    save_transaction,
+    get_transactions,
+    get_transaction,
+    get_metrics
+)
+from backend.services.ai_service import get_ai_investigation
 app = FastAPI(title="RAKSHA API")
 
 
@@ -64,3 +72,39 @@ def analyze_risk(request: RiskRequest):
 @app.get("/api/transactions")
 def list_transactions():
     return get_transactions()
+@app.get("/api/transactions/{transaction_id}")
+def transaction_details(transaction_id: str):
+    transaction = get_transaction(transaction_id)
+
+    if transaction is None:
+        return {
+            "error": "Transaction not found"
+        }
+
+    transaction["risk_factors"] = get_risk_factors(transaction)
+
+    return transaction
+@app.get("/api/metrics")
+def metrics():
+    return get_metrics()
+@app.post("/api/transactions/{transaction_id}/investigate")
+def investigate_transaction(transaction_id: str):
+    transaction = get_transaction(transaction_id)
+
+    if transaction is None:
+        return {
+            "error": "Transaction not found"
+        }
+
+    risk_factors = get_risk_factors(transaction)
+
+    investigation = get_ai_investigation(
+        transaction,
+        risk_factors
+    )
+
+    return {
+        "transaction_id": transaction_id,
+        "risk_factors": risk_factors,
+        "investigation": investigation
+    }

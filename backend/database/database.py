@@ -92,3 +92,56 @@ def get_transactions():
     connection.close()
 
     return [dict(row) for row in rows]
+def get_transaction(transaction_id: str):
+    connection = get_connection()
+
+    row = connection.execute(
+        """
+        SELECT
+            transaction_id,
+            amount,
+            currency,
+            payment_method,
+            risk_score,
+            risk_level,
+            decision,
+            created_at
+        FROM transactions
+        WHERE transaction_id = ?
+        """,
+        (transaction_id,)
+    ).fetchone()
+
+    connection.close()
+
+    if row is None:
+        return None
+
+    return dict(row)
+def get_metrics():
+    connection = get_connection()
+
+    total = connection.execute(
+        "SELECT COUNT(*) FROM transactions"
+    ).fetchone()[0]
+
+    high_risk = connection.execute(
+        "SELECT COUNT(*) FROM transactions WHERE risk_level = 'high'"
+    ).fetchone()[0]
+
+    medium_risk = connection.execute(
+        "SELECT COUNT(*) FROM transactions WHERE risk_level = 'medium'"
+    ).fetchone()[0]
+
+    low_risk = connection.execute(
+        "SELECT COUNT(*) FROM transactions WHERE risk_level = 'low'"
+    ).fetchone()[0]
+
+    connection.close()
+
+    return {
+        "total_transactions": total,
+        "high_risk": high_risk,
+        "medium_risk": medium_risk,
+        "low_risk": low_risk
+    }
