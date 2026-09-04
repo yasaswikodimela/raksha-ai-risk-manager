@@ -27,6 +27,23 @@ def initialize_database():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
+    connection.execute("""
+        CREATE TABLE IF NOT EXISTS audit_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            transaction_id TEXT NOT NULL,
+            event_type TEXT NOT NULL,
+            details TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    connection.execute("""
+        CREATE TABLE IF NOT EXISTS webhook_events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            event_id TEXT UNIQUE NOT NULL,
+            event_type TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
 
     connection.commit()
     connection.close()
@@ -145,3 +162,73 @@ def get_metrics():
         "medium_risk": medium_risk,
         "low_risk": low_risk
     }
+def save_audit_log(
+    transaction_id: str,
+    event_type: str,
+    details: str
+):
+    connection = get_connection()
+
+    connection.execute(
+        """
+        INSERT INTO audit_logs (
+            transaction_id,
+            event_type,
+            details
+        )
+        VALUES (?, ?, ?)
+        """,
+        (
+            transaction_id,
+            event_type,
+            details
+        )
+    )
+
+    connection.commit()
+    connection.close()
+def get_audit_logs(transaction_id: str):
+    connection = get_connection()
+
+    rows = connection.execute(
+        """
+        SELECT
+            event_type,
+            details,
+            created_at
+        FROM audit_logs
+        WHERE transaction_id = ?
+        ORDER BY created_at ASC
+        """,
+        (transaction_id,)
+    ).fetchall()
+
+    connection.close()
+
+    return [dict(row) for row in rows]
+def webhook_event_exists(event_id: str):
+    connection = get_connection()
+
+    row = connection.execute(
+        "SELECT 1 FROM webhook_events WHERE event_id = ?",
+        (event_id,)
+    ).fetchone()
+
+    connection.close()
+
+    return row is not None
+
+
+def save_webhook_event(event_id: str, event_type: str):
+    connection = get_connection()
+
+    connection.execute(
+        """
+        INSERT INTO webhook_events (event_id, event_type)
+        VALUES (?, ?)
+        """,
+        (event_id, event_type)
+    )
+
+    connection.commit()
+    connection.close()
