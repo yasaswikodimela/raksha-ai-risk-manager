@@ -1,17 +1,18 @@
 from dotenv import load_dotenv
-
 load_dotenv()
+
 import json
 from fastapi.middleware.cors import CORSMiddleware
 import os
 import hmac
 import hashlib
+import uuid
+
 from fastapi import FastAPI, Request, HTTPException
 from pydantic import BaseModel
-import uuid
-from backend.services.risk_factors import get_risk_factors
-from backend.decision_engine import make_decision
+
 from backend.database.database import (
+    initialize_database,
     save_transaction,
     get_transactions,
     get_transaction,
@@ -21,7 +22,13 @@ from backend.database.database import (
     webhook_event_exists,
     save_webhook_event
 )
+
+from backend.services.risk_factors import get_risk_factors
+from backend.decision_engine import make_decision
 from backend.services.ai_service import get_ai_investigation
+from backend.services.ml_service import predict_risk
+
+
 app = FastAPI(title="RAKSHA API")
 
 app.add_middleware(
@@ -31,6 +38,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+initialize_database()
+
 class RiskRequest(BaseModel):
     amount: float
     currency: str
@@ -55,15 +64,33 @@ def health_check():
 @app.post("/api/risk/analyze", response_model=RiskResponse)
 def analyze_risk(request: RiskRequest):
 
-    # Temporary risk scoring.
-    # This will later be replaced by Person 1's ML model.
-    if request.amount >= 10000:
-        risk_score = 0.85
-    elif request.amount >= 5000:
-        risk_score = 0.55
-    else:
-        risk_score = 0.10
+    # Build model input from API request
+    model_input = {
+        "TransactionAmt": request.amount,
+        "TransactionDay": 0,
+        "TransactionHour": 12,
+        "ProductCD": "W",
+        "card1": 0,
+        "card2": 0,
+        "card3": 0,
+        "card4": request.payment_method,
+        "card5": 0,
+        "card6": request.payment_method,
+        "addr1": 0,
+        "addr2": 0,
+        "P_emaildomain": "",
+        "R_emaildomain": "",
+        "DeviceType": "unknown",
+        "DeviceInfo": "unknown"
+    }
 
+    # Actual ML fraud-risk prediction
+    risk = predict_risk(model_input)
+
+    risk_score = risk["risk_score"]
+    risk_level = risk["risk_level"]
+
+    # Decision engine uses ML risk score
     decision = make_decision(risk_score)
 
     transaction_id = str(uuid.uuid4())
@@ -74,46 +101,58 @@ def analyze_risk(request: RiskRequest):
         currency=request.currency,
         payment_method=request.payment_method,
         risk_score=risk_score,
-        risk_level=decision["risk_level"],
+        risk_level=risk_level,
         decision=decision["decision"]
     )
+
     save_audit_log(
         transaction_id=transaction_id,
         event_type="RISK_ANALYSIS",
-        details=f"Risk score: {risk_score}, risk level: {decision['risk_level']}, decision: {decision['decision']}"
+        details=(
+            f"ML risk score: {risk_score}, "
+            f"risk level: {risk_level}, "
+            f"decision: {decision['decision']}"
+        )
     )
+
     return {
         "transaction_id": transaction_id,
         "risk_score": risk_score,
-        "risk_level": decision["risk_level"],
+        "risk_level": risk_level,
         "decision": decision["decision"]
     }
+
+
 @app.get("/api/transactions")
 def list_transactions():
     return get_transactions()
+
+
 @app.get("/api/transactions/{transaction_id}")
 def transaction_details(transaction_id: str):
+
     transaction = get_transaction(transaction_id)
 
     if transaction is None:
-        return {
-            "error": "Transaction not found"
-        }
+        return {"error": "Transaction not found"}
 
     transaction["risk_factors"] = get_risk_factors(transaction)
 
     return transaction
+
+
 @app.get("/api/metrics")
 def metrics():
     return get_metrics()
+
+
 @app.post("/api/transactions/{transaction_id}/investigate")
 def investigate_transaction(transaction_id: str):
+
     transaction = get_transaction(transaction_id)
 
     if transaction is None:
-        return {
-            "error": "Transaction not found"
-        }
+        return {"error": "Transaction not found"}
 
     risk_factors = get_risk_factors(transaction)
 
@@ -127,21 +166,25 @@ def investigate_transaction(transaction_id: str):
         "risk_factors": risk_factors,
         "investigation": investigation
     }
+
+
 @app.get("/api/transactions/{transaction_id}/audit")
 def transaction_audit(transaction_id: str):
+
     transaction = get_transaction(transaction_id)
 
     if transaction is None:
-        return {
-            "error": "Transaction not found"
-        }
+        return {"error": "Transaction not found"}
 
     return {
         "transaction_id": transaction_id,
         "audit_logs": get_audit_logs(transaction_id)
     }
+
+
 @app.post("/webhooks/razorpay")
 async def razorpay_webhook(request: Request):
+
     webhook_secret = os.getenv("RAZORPAY_WEBHOOK_SECRET")
 
     if not webhook_secret:
@@ -151,6 +194,7 @@ async def razorpay_webhook(request: Request):
         )
 
     raw_body = await request.body()
+
     received_signature = request.headers.get("X-Razorpay-Signature")
 
     if not received_signature:
@@ -165,7 +209,10 @@ async def razorpay_webhook(request: Request):
         hashlib.sha256
     ).hexdigest()
 
-    if not hmac.compare_digest(expected_signature, received_signature):
+    if not hmac.compare_digest(
+        expected_signature,
+        received_signature
+    ):
         raise HTTPException(
             status_code=400,
             detail="Invalid Razorpay webhook signature"
@@ -199,13 +246,31 @@ async def razorpay_webhook(request: Request):
     currency = payment.get("currency", "INR")
     payment_method = payment.get("method", "unknown")
 
-    # Temporary risk scoring until Person 1's ML model is connected.
-    if amount >= 10000:
-        risk_score = 0.85
-    elif amount >= 5000:
-        risk_score = 0.55
-    else:
-        risk_score = 0.10
+    # Build ML model input from Razorpay payment
+    model_input = {
+        "TransactionAmt": amount,
+        "TransactionDay": 0,
+        "TransactionHour": 12,
+        "ProductCD": "W",
+        "card1": 0,
+        "card2": 0,
+        "card3": 0,
+        "card4": payment_method,
+        "card5": 0,
+        "card6": payment_method,
+        "addr1": 0,
+        "addr2": 0,
+        "P_emaildomain": "",
+        "R_emaildomain": "",
+        "DeviceType": "unknown",
+        "DeviceInfo": "unknown"
+    }
+
+    # Actual ML fraud-risk prediction
+    risk = predict_risk(model_input)
+
+    risk_score = risk["risk_score"]
+    risk_level = risk["risk_level"]
 
     decision = make_decision(risk_score)
 
@@ -217,7 +282,7 @@ async def razorpay_webhook(request: Request):
         currency=currency,
         payment_method=payment_method,
         risk_score=risk_score,
-        risk_level=decision["risk_level"],
+        risk_level=risk_level,
         decision=decision["decision"]
     )
 
@@ -226,8 +291,8 @@ async def razorpay_webhook(request: Request):
         event_type=event_type,
         details=(
             f"Razorpay webhook received. "
-            f"Risk score: {risk_score}, "
-            f"risk level: {decision['risk_level']}, "
+            f"ML risk score: {risk_score}, "
+            f"risk level: {risk_level}, "
             f"decision: {decision['decision']}"
         )
     )
@@ -238,6 +303,6 @@ async def razorpay_webhook(request: Request):
         "status": "processed",
         "transaction_id": transaction_id,
         "risk_score": risk_score,
-        "risk_level": decision["risk_level"],
+        "risk_level": risk_level,
         "decision": decision["decision"]
     }
