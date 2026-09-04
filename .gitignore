@@ -1,1 +1,26 @@
+# Data
 data/
+
+# Virtual Environment
+.venv/
+venv/
+ENV/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+backend/**/__pycache__/
+
+# Local SQLite Database
+*.db
+backend/database/raksha.db
+
+# Environment variables & secrets
+.env
+.env.*
+*.secret
+
+# IDE
+.vscode/
+.idea/
