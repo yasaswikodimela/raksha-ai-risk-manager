@@ -2,6 +2,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 import json
+from fastapi.middleware.cors import CORSMiddleware
 import os
 import hmac
 import hashlib
@@ -23,7 +24,13 @@ from backend.database.database import (
 from backend.services.ai_service import get_ai_investigation
 app = FastAPI(title="RAKSHA API")
 
-
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 class RiskRequest(BaseModel):
     amount: float
     currency: str

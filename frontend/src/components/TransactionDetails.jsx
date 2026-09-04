@@ -1,7 +1,17 @@
-import RiskFactors from "./RiskFactors";
-import AIInvestigation from "./AIInvestigation";
+import { useEffect, useState } from "react";
 
 function TransactionDetails({ transaction }) {
+  const [investigation, setInvestigation] = useState(null);
+
+  useEffect(() => {
+    if (!transaction) {
+      setInvestigation(null);
+      return;
+    }
+
+    console.log("Selected transaction:", transaction);
+  }, [transaction]);
+
   if (!transaction) {
     return (
       <div>
@@ -15,27 +25,37 @@ function TransactionDetails({ transaction }) {
     <div>
       <h2>TRANSACTION INVESTIGATION</h2>
 
-      <h3>{transaction.id}</h3>
-
       <p>
-        <strong>Amount:</strong> {transaction.amount}
+        <strong>Transaction ID:</strong>{" "}
+        {transaction.transaction_id}
       </p>
 
       <p>
-        <strong>Risk Score:</strong> {transaction.riskScore}%
+        <strong>Amount:</strong> ₹{transaction.amount}
       </p>
 
       <p>
-        <strong>Risk Level:</strong> {transaction.risk}
+        <strong>Currency:</strong> {transaction.currency}
       </p>
 
       <p>
-        <strong>Decision:</strong> {transaction.decision}
+        <strong>Payment Method:</strong>{" "}
+        {transaction.payment_method}
       </p>
 
-      <RiskFactors factors={transaction.riskFactors} />
+      <p>
+        <strong>Risk Score:</strong> {transaction.risk_score}
+      </p>
 
-      <AIInvestigation transaction={transaction} />
+      <p>
+        <strong>Risk Level:</strong>{" "}
+        {transaction.risk_level}
+      </p>
+
+      <p>
+        <strong>Decision:</strong>{" "}
+        {transaction.decision}
+      </p>
     </div>
   );
 }
