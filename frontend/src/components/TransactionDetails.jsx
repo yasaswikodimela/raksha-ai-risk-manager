@@ -1,17 +1,4 @@
-import { useEffect, useState } from "react";
-
 function TransactionDetails({ transaction }) {
-  const [investigation, setInvestigation] = useState(null);
-
-  useEffect(() => {
-    if (!transaction) {
-      setInvestigation(null);
-      return;
-    }
-
-    console.log("Selected transaction:", transaction);
-  }, [transaction]);
-
   if (!transaction) {
     return (
       <div>
