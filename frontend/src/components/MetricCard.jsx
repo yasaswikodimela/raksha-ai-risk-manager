@@ -1,4 +1,3 @@
-import React from 'react';
 import clsx from 'clsx';
 
 function MetricCard({ title, value, subtitle, icon: Icon, trend }) {

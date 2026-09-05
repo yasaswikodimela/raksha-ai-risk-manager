@@ -1,4 +1,3 @@
-import React from 'react';
 import { FileText, Search } from 'lucide-react';
 
 function AuditTrail() {

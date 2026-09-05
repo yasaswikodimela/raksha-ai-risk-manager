@@ -1,4 +1,3 @@
-import React from 'react';
 import clsx from 'clsx';
 import { ShieldCheck, ShieldAlert, Shield } from 'lucide-react';
 

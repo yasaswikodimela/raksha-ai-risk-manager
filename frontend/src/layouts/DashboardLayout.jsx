@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, ShieldAlert, Activity, FileText, Menu, X, Server, Database, BrainCircuit, Shield } from 'lucide-react';
+import { LayoutDashboard, ShieldAlert, Activity, FileText, Menu, Server } from 'lucide-react';
 import { api } from '../services/api';
 import { usePolling } from '../hooks/usePolling';
 import clsx from 'clsx';

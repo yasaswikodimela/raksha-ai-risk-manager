@@ -21,8 +21,8 @@ export function usePolling(apiFunction, interval = 5000) {
   useEffect(() => {
     isPollingRef.current = true;
     
-    // Initial fetch
-    fetchData();
+    // Defer the initial state update until after the effect completes.
+    const initialFetch = setTimeout(fetchData, 0);
 
     // Polling loop
     const pollInterval = setInterval(() => {
@@ -33,6 +33,7 @@ export function usePolling(apiFunction, interval = 5000) {
 
     return () => {
       isPollingRef.current = false;
+      clearTimeout(initialFetch);
       clearInterval(pollInterval);
     };
   }, [fetchData, interval]);

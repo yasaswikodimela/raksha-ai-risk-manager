@@ -1,12 +1,12 @@
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePolling } from '../hooks/usePolling';
 import { api } from '../services/api';
 import MetricCard from '../components/MetricCard';
 import RiskBadge from '../components/RiskBadge';
 import DecisionBadge from '../components/DecisionBadge';
-import { ShieldCheck, ShieldAlert, Activity, Users, CreditCard, ChevronRight } from 'lucide-react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { Shield, ShieldCheck, ShieldAlert, Activity, Users, CreditCard, ChevronRight } from 'lucide-react';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 
 function Dashboard() {
   const navigate = useNavigate();

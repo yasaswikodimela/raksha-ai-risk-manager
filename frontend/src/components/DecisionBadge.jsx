@@ -1,4 +1,3 @@
-import React from 'react';
 import clsx from 'clsx';
 import { CheckCircle2, Eye, AlertCircle } from 'lucide-react';
 
